@@ -1,0 +1,99 @@
+@startuml 5_Class_HabitTracker
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #EBF5FB
+  BorderColor #2980B9
+  FontSize 12
+}
+skinparam enum {
+  BackgroundColor #FEF9E7
+  BorderColor #D4AC0D
+}
+
+class User {
+  - userID : UUID
+  - username : String
+  - email : String
+  - passwordHash : String
+  - createdAt : DateTime
+  + register(username, email, password) : Boolean
+  + login(email, password) : AuthToken
+  + logout(token) : void
+  + validatePasswordFormat(password) : Boolean
+}
+
+class Habit {
+  - habitID : UUID
+  - userID : UUID
+  - name : String
+  - description : String
+  - isActive : Boolean
+  - createdAt : DateTime
+  + create(userID, name, description) : Habit
+  + update(name, description) : void
+  + delete() : void
+  + getAll(userID) : List~Habit~
+  + validateInput(name) : Boolean
+}
+
+class HabitLog {
+  - logID : UUID
+  - habitID : UUID
+  - userID : UUID
+  - completedDate : Date
+  - loggedAt : DateTime
+  + markCompleted(habitID, userID, utcDate) : HabitLog
+  + isDuplicateToday(habitID, utcDate) : Boolean
+  + getDailyLogs(userID, utcDate) : List~HabitLog~
+  + getWeeklyLogs(userID, startDate, endDate) : List~HabitLog~
+  + computeStreak(habitID) : Integer
+}
+
+class Reminder {
+  - reminderID : UUID
+  - habitID : UUID
+  - userID : UUID
+  - reminderTime : Time
+  - notificationType : NotificationType
+  - isActive : Boolean
+  + create(habitID, time, type) : Reminder
+  + disable() : void
+  + delete() : void
+  + getActiveReminders() : List~Reminder~
+}
+
+class NotificationService {
+  + sendReminder(userID, habitID, channel) : Boolean
+  + receiveDeliveryStatus(reminderID, status) : void
+}
+
+class Dashboard {
+  - userID : UUID
+  + getDailySummary(userID, utcDate) : DashboardData
+  + getWeeklySummary(userID, last7Days) : WeeklyData
+  + getStreakPerHabit(habitID) : Integer
+}
+
+class AuthService {
+  + hashPassword(password) : String
+  + verifyHash(password, hash) : Boolean
+  + createSessionToken(userID) : AuthToken
+  + invalidateSession(token) : void
+  + isSessionExpired(token) : Boolean
+}
+
+enum NotificationType {
+  EMAIL
+  PUSH
+}
+
+User "1" *-- "0..*" Habit : owns
+Habit "1" *-- "0..*" HabitLog : generates
+User "1" *-- "0..*" HabitLog : records
+Habit "1" *-- "0..1" Reminder : has
+Reminder --> NotificationService : triggers
+Reminder --> NotificationType : uses
+Dashboard --> HabitLog : reads
+Dashboard --> Habit : reads
+User --> AuthService : uses
+@enduml
