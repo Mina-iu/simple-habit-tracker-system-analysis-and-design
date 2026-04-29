@@ -1,0 +1,74 @@
+@startuml 7_Activity_DailyHabitTracking
+skinparam activity {
+  BackgroundColor #EBF5FB
+  BorderColor #2980B9
+  DiamondBackgroundColor #FEF9E7
+  DiamondBorderColor #D4AC0D
+  FontSize 12
+}
+skinparam ArrowColor #2C3E50
+
+start
+
+:User opens the app;
+:System validates session token;
+
+if (Session valid?) then (no)
+  :Redirect to Login page;
+  :User submits email and password;
+  :AuthService verifies credentials;
+  if (Credentials valid?) then (no)
+    :Display error: "Invalid email or password";
+    stop
+  else (yes)
+    :Create server-side session token (30 min expiry);
+  end if
+else (yes)
+end if
+
+:Load Dashboard;
+:Retrieve active habits for user;
+:Retrieve today's HabitLog records (UTC date);
+:Display dashboard summary\n(total habits, completed today, streak per habit);
+
+:User selects a habit to mark as completed;
+:System retrieves server-side UTC date;
+:Query HabitLog for (habitID, utcDate);
+
+if (Log record exists?) then (yes)
+  :Return duplicate error;
+  :Display: "Habit already completed today";
+else (no)
+  :Insert HabitLog (habitID, userID, utcDate, loggedAt);
+  :Update UI: mark habit as completed;
+  :Increment today's completion count;
+end if
+
+:User selects progress view;
+
+if (View type?) then (Daily)
+  :Fetch today's HabitLog records (utcDate);
+  :Map records to active habit list;
+  :Display daily progress\n(completed vs. pending habits);
+else (Weekly)
+  :Fetch HabitLog records for last 7 UTC days;
+  :Map records to 7-day grid per habit;
+  :Display weekly grid\n(filled = completed, empty = missed);
+end if
+
+:Background: check active reminders for current time;
+
+if (Active reminders found?) then (yes)
+  if (Reminder isActive = true?) then (yes)
+    :Trigger Notification Service\n(userID, habitID, notificationType);
+    :Notification Service sends reminder (email / push);
+    :Log delivery status;
+  else (no)
+    :Skip — reminder is disabled;
+  end if
+else (no)
+  :No action required;
+end if
+
+stop
+@enduml
