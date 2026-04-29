@@ -1,0 +1,40 @@
+@startuml 6b_Seq_CreateHabit
+skinparam sequenceMessageAlign center
+skinparam sequence {
+  ParticipantBackgroundColor #EBF5FB
+  ParticipantBorderColor #2980B9
+  ActorBackgroundColor #D5F5E3
+  LifeLineBorderColor #5D6D7E
+}
+
+actor "User" as USER
+participant "UI" as UI
+participant "HabitController" as CTRL
+participant "HabitService" as SVC
+database "Habit Store" as DB
+
+USER -> UI : fill form (name, description)
+UI -> CTRL : createHabit(authToken, name, description)
+CTRL -> CTRL : validateSession(authToken)
+
+alt session expired or invalid
+  CTRL --> UI : 401: "Session expired. Please log in again."
+  UI --> USER : redirect to Login
+else session valid
+  CTRL -> CTRL : validateInput(name)
+  alt name is empty
+    CTRL --> UI : 400: "Habit name is required"
+    UI --> USER : show validation error
+  else name exceeds 100 characters
+    CTRL --> UI : 400: "Habit name must not exceed 100 characters"
+    UI --> USER : show validation error
+  else input valid
+    CTRL -> SVC : create(userID, name, description)
+    SVC -> DB : INSERT Habit(habitID, userID, name, desc,\nisActive=true, createdAt)
+    DB --> SVC : habitRecord
+    SVC --> CTRL : habitCreated
+    CTRL --> UI : 201: habitData
+    UI --> USER : show new habit in list
+  end
+end
+@enduml
