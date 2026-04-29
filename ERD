@@ -1,0 +1,54 @@
+@startuml 4_ERD_HabitTracker
+skinparam linetype ortho
+skinparam entity {
+  BackgroundColor #EBF5FB
+  BorderColor #2980B9
+  FontSize 13
+}
+
+entity "User" as USER {
+  * userID : UUID <<PK>>
+  --
+  * username : VARCHAR(50) <<UNIQUE>>
+  * email : VARCHAR(100) <<UNIQUE>>
+  * passwordHash : VARCHAR(255)
+  * createdAt : TIMESTAMP
+}
+
+entity "Habit" as HABIT {
+  * habitID : UUID <<PK>>
+  --
+  * userID : UUID <<FK>>
+  * name : VARCHAR(100)
+  description : TEXT
+  * isActive : BOOLEAN
+  * createdAt : TIMESTAMP
+}
+
+entity "HabitLog" as LOG {
+  * logID : UUID <<PK>>
+  --
+  * habitID : UUID <<FK>>
+  * userID : UUID <<FK>>
+  * completedDate : DATE
+  * loggedAt : TIMESTAMP
+  --
+  UNIQUE (habitID, completedDate)
+}
+
+entity "Reminder" as REMINDER {
+  * reminderID : UUID <<PK>>
+  --
+  * habitID : UUID <<FK>>
+  * userID : UUID <<FK>>
+  * reminderTime : TIME
+  * notificationType : ENUM(email, push)
+  * isActive : BOOLEAN
+}
+
+USER ||--o{ HABIT : "owns"
+HABIT ||--o{ LOG : "has"
+USER ||--o{ LOG : "records"
+HABIT ||--o| REMINDER : "has"
+USER ||--o{ REMINDER : "sets"
+@enduml
