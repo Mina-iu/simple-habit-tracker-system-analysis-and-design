@@ -1,0 +1,67 @@
+@startuml 6a_Seq_Registration_Login
+skinparam sequenceMessageAlign center
+skinparam sequence {
+  ParticipantBackgroundColor #EBF5FB
+  ParticipantBorderColor #2980B9
+  ActorBackgroundColor #D5F5E3
+  LifeLineBorderColor #5D6D7E
+}
+
+actor "User" as USER
+participant "UI" as UI
+participant "AuthController" as AUTH
+participant "AuthService" as SVC
+database "User Store" as DB
+
+== Registration ==
+
+USER -> UI : submit(username, email, password)
+UI -> AUTH : register(username, email, password)
+AUTH -> AUTH : validatePasswordFormat(password)
+
+alt invalid format [< 8 chars or missing letter/number]
+  AUTH --> UI : 400: "Password must be 8+ chars\ncontaining a letter and a number"
+  UI --> USER : show validation error
+else valid format
+  AUTH -> SVC : checkEmailExists(email)
+  SVC -> DB : SELECT WHERE email = ?
+  DB --> SVC : record | null
+  alt email already registered
+    SVC --> AUTH : conflict: duplicate email
+    AUTH --> UI : 409: "Email already registered"
+    UI --> USER : show error message
+  else email available
+    SVC -> SVC : hashPassword(password) [bcrypt]
+    SVC -> DB : INSERT User(username, email, passwordHash, createdAt)
+    DB --> SVC : success
+    SVC --> AUTH : userCreated
+    AUTH --> UI : 201: registration success
+    UI --> USER : redirect to Login
+  end
+end
+
+== Login ==
+
+USER -> UI : submit(email, password)
+UI -> AUTH : login(email, password)
+AUTH -> SVC : findByEmail(email)
+SVC -> DB : SELECT WHERE email = ?
+DB --> SVC : userRecord | null
+
+alt user not found
+  AUTH --> UI : 401: "Invalid email or password"
+  UI --> USER : show error message
+else user found
+  AUTH -> SVC : verifyHash(password, passwordHash)
+  alt hash mismatch
+    SVC --> AUTH : false
+    AUTH --> UI : 401: "Invalid email or password"
+    UI --> USER : show error message
+  else hash matches
+    SVC -> SVC : createSessionToken(userID) [expires 30min]
+    SVC --> AUTH : authToken + expiry
+    AUTH --> UI : 200: authToken
+    UI --> USER : redirect to Dashboard
+  end
+end
+@enduml
