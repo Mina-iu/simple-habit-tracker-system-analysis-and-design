@@ -1,0 +1,58 @@
+@startuml 3_DFD_Level1
+skinparam defaultTextAlignment center
+skinparam rectangle {
+  BackgroundColor #D6EAF8
+  BorderColor #2471A3
+  FontSize 12
+}
+skinparam component {
+  BackgroundColor #D5F5E3
+  BorderColor #1A5276
+  FontSize 12
+}
+skinparam database {
+  BackgroundColor #FDEBD0
+  BorderColor #CA6F1E
+  FontSize 12
+}
+
+rectangle "User" as USER
+rectangle "Notification\nService" as NS
+
+component "1.0\nManage\nAuthentication" as P1
+component "2.0\nManage\nHabits" as P2
+component "3.0\nTrack &\nReport Progress" as P3
+component "4.0\nManage\nReminders" as P4
+
+database "D1: User Store" as DS1
+database "D2: Habit Store" as DS2
+database "D3: HabitLog Store" as DS3
+database "D4: Reminder Store" as DS4
+
+USER --> P1 : credentials / registration data
+P1 --> USER : auth token / error message
+P1 --> DS1 : store user (hashed password)
+DS1 --> P1 : user record / null
+
+USER --> P2 : habit data (create/update/delete/view)
+P2 --> USER : habit list / confirmation / error
+DS1 --> P2 : validate session
+P2 --> DS2 : read / write habits
+DS2 --> P2 : habit records
+
+USER --> P3 : completion request (UTC date)\nprogress request
+P3 --> USER : completion status / progress report\ndashboard summary / duplicate error
+DS1 --> P3 : validate session
+DS2 --> P3 : active habits
+P3 --> DS3 : insert HabitLog (habitID, userID, utcDate)
+DS3 --> P3 : log records / duplicate check result
+
+USER --> P4 : reminder settings / disable request
+P4 --> USER : confirmation / error
+DS1 --> P4 : validate session
+DS2 --> P4 : verify habit exists
+P4 --> DS4 : store / update reminder
+DS4 --> P4 : reminder records
+P4 --> NS : reminder trigger (habitID, time, notificationType)
+NS --> P4 : delivery status
+@enduml
