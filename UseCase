@@ -1,0 +1,68 @@
+@startuml 1_UseCase_HabitTracker
+left to right direction
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #EBF5FB
+  BorderColor #2980B9
+  FontSize 12
+}
+skinparam rectangle {
+  BorderColor #1A5276
+  FontSize 13
+}
+
+actor "User" as User
+actor "Notification Service" as NS
+
+rectangle "Simple Habit Tracking App" {
+  rectangle "Authentication" {
+    usecase "Register Account" as UC01
+    usecase "Login" as UC02
+    usecase "Logout" as UC03
+    usecase "Validate Credentials" as INC01
+    usecase "Validate Password Format" as INC02
+  }
+  rectangle "Habit Management" {
+    usecase "Create Habit" as UC04
+    usecase "View Habits" as UC05
+    usecase "Update Habit" as UC06
+    usecase "Delete Habit" as UC07
+    usecase "Validate Habit Input" as INC03
+  }
+  rectangle "Habit Tracking" {
+    usecase "Mark Habit as Completed" as UC08
+    usecase "Check Duplicate Completion" as INC04
+    usecase "View Daily Progress" as UC09
+    usecase "View Weekly Progress" as UC10
+    usecase "View Dashboard" as UC11
+  }
+  rectangle "Reminder Management" {
+    usecase "Set Reminder" as UC12
+    usecase "Disable Reminder" as UC14
+    usecase "Send Reminder Notification" as UC13
+  }
+}
+
+User --> UC01
+User --> UC02
+User --> UC03
+User --> UC04
+User --> UC05
+User --> UC06
+User --> UC07
+User --> UC08
+User --> UC09
+User --> UC10
+User --> UC11
+User --> UC12
+User --> UC14
+NS --> UC13
+
+UC01 .> INC02 : <<include>>
+UC02 .> INC01 : <<include>>
+UC04 .> INC03 : <<include>>
+UC06 .> INC03 : <<include>>
+UC08 .> INC04 : <<include>>
+UC13 .> UC12 : <<extend>>
+@enduml
