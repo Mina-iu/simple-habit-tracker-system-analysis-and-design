@@ -1,0 +1,26 @@
+@startuml 2_DFD_Context
+skinparam defaultTextAlignment center
+skinparam rectangle {
+  BackgroundColor #D6EAF8
+  BorderColor #2471A3
+  FontStyle bold
+  FontSize 13
+}
+skinparam component {
+  BackgroundColor #D5F5E3
+  BorderColor #1A5276
+  FontStyle bold
+  FontSize 14
+}
+
+rectangle "User" as USER
+rectangle "Notification\nService" as NS
+
+component "       0       \nHabit Tracking\n     System     " as SYS
+
+USER -right-> SYS : Registration Data\nLogin Credentials\nHabit Data (CRUD)\nCompletion Request (UTC Date)\nProgress Request\nReminder Settings
+SYS -left-> USER : Auth Token / Error Messages\nHabit List\nCompletion Status\nDaily Progress Report\nWeekly Progress Report\nDashboard Summary
+
+SYS -down-> NS : Reminder Trigger\n(habitID, userID, time, notificationType)
+NS -up-> SYS : Delivery Status
+@enduml
