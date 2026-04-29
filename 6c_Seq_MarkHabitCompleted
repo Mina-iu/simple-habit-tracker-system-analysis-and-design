@@ -1,0 +1,40 @@
+@startuml 6c_Seq_MarkHabitCompleted
+skinparam sequenceMessageAlign center
+skinparam sequence {
+  ParticipantBackgroundColor #EBF5FB
+  ParticipantBorderColor #2980B9
+  ActorBackgroundColor #D5F5E3
+  LifeLineBorderColor #5D6D7E
+}
+
+actor "User" as USER
+participant "UI" as UI
+participant "TrackingController" as CTRL
+participant "HabitLogService" as SVC
+database "HabitLog Store" as DB
+
+USER -> UI : click "Mark Complete" (habitID)
+UI -> CTRL : markCompleted(authToken, habitID)
+CTRL -> CTRL : validateSession(authToken)
+
+alt session expired or invalid
+  CTRL --> UI : 401: "Session expired. Please log in again."
+  UI --> USER : redirect to Login
+else session valid
+  CTRL -> CTRL : getUTCDate() [server-side UTC]
+  CTRL -> SVC : isDuplicateToday(habitID, utcDate)
+  SVC -> DB : SELECT WHERE habitID = ?\nAND completedDate = utcDate
+  DB --> SVC : record | null
+  alt record exists [duplicate]
+    SVC --> CTRL : true
+    CTRL --> UI : 409: "Habit already completed today"
+    UI --> USER : show already-completed indicator
+  else no record [first completion today]
+    SVC -> DB : INSERT HabitLog(logID, habitID, userID,\ncompletedDate=utcDate, loggedAt)
+    DB --> SVC : logRecord
+    SVC --> CTRL : logCreated
+    CTRL --> UI : 200: completionStatus (completed=true)
+    UI --> USER : mark habit green (completed)
+  end
+end
+@enduml
