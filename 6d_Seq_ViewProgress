@@ -1,0 +1,46 @@
+@startuml 6d_Seq_ViewProgress
+skinparam sequenceMessageAlign center
+skinparam sequence {
+  ParticipantBackgroundColor #EBF5FB
+  ParticipantBorderColor #2980B9
+  ActorBackgroundColor #D5F5E3
+  LifeLineBorderColor #5D6D7E
+}
+
+actor "User" as USER
+participant "UI" as UI
+participant "ProgressController" as CTRL
+participant "HabitLogService" as SVC
+database "HabitLog Store" as LOGDB
+database "Habit Store" as HABITDB
+
+== View Daily Progress ==
+
+USER -> UI : open Daily View
+UI -> CTRL : getDailyProgress(authToken, utcDate)
+CTRL -> CTRL : validateSession(authToken)
+CTRL -> SVC : getDailyLogs(userID, utcDate)
+SVC -> LOGDB : SELECT WHERE userID = ?\nAND completedDate = utcDate
+LOGDB --> SVC : completedHabitIDs[]
+SVC -> HABITDB : SELECT active habits WHERE userID = ?
+HABITDB --> SVC : habitList[]
+SVC --> CTRL : {habitList, completedHabitIDs}
+CTRL --> UI : 200: dailyProgressData
+UI --> USER : display habit list\nwith completed / pending status
+
+== View Weekly Progress ==
+
+USER -> UI : open Weekly View
+UI -> CTRL : getWeeklyProgress(authToken)
+CTRL -> CTRL : validateSession(authToken)
+CTRL -> CTRL : computeDateRange(utcToday - 6 days to utcToday)
+CTRL -> SVC : getWeeklyLogs(userID, startDate, endDate)
+SVC -> LOGDB : SELECT WHERE userID = ?\nAND completedDate BETWEEN startDate AND endDate
+LOGDB --> SVC : logRecords[]
+SVC -> HABITDB : SELECT active habits WHERE userID = ?
+HABITDB --> SVC : habitList[]
+SVC -> SVC : mapLogsToGrid(habitList, logRecords, 7 days)
+SVC --> CTRL : {habitList, dailyGridData[7]}
+CTRL --> UI : 200: weeklyProgressData
+UI --> USER : display 7-day completion grid\n(completed = filled / missed = empty)
+@enduml
